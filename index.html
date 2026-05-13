@@ -1,1 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini (ゲミニ)</title>
+    <style>
+        :root {
+            --bg-color: #131314;
+            --sidebar-color: #1e1f20;
+            --text-color: #e3e3e3;
+            --accent-color: #4fadff;
+            --input-bg: #1e1f20;
+            --border-color: #444;
+            --user-msg-bg: #2b2c2e;
+        }
 
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Google Sans', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-color);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .new-chat-btn {
+            background: #333;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            color: white;
+            text-align: left;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: #444;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        header {
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--accent-color);
+        }
+
+        header span {
+            color: #888;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 10%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            scroll-behavior: smooth;
+        }
+
+        .message-row {
+            display: flex;
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .bot .avatar {
+            background: linear-gradient(45deg, #4285f4, #9b72cb, #d96570);
+        }
+
+        .user .avatar {
+            background: #555;
+            order: 2;
+        }
+
+        .user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            line-height: 1.6;
+            font-size: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .user .message-content {
+            background-color: var(--user-msg-bg);
+            padding: 12px 20px;
+            border-radius: 20px;
+            order: 1;
+        }
+
+        .input-wrapper {
+            padding: 20px 10% 40px 10%;
+            background: linear-gradient(transparent, var(--bg-color) 20%);
+        }
+
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--input-bg);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            border: 1px solid transparent;
+            transition: border 0.3s;
+        }
+
+        .input-container:focus-within {
+            border: 1px solid #555;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            padding: 10px;
+            outline: none;
+        }
+
+        .send-btn {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+
+        .footer-text {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="sidebar">
+        <!-- IDを追加してJSから操作できるようにしました -->
+        <button class="new-chat-btn" id="new-chat-btn">＋ 新しいチャット</button>
+        <div style="font-size: 0.8rem; color: #888; margin-top: auto;">設定 (ゲミニ設定)</div>
+    </div>
+
+    <div class="main-content">
+        <header>Gemini <span>(ゲミニ)</span></header>
+
+        <div id="chat-container">
+            <!-- 初期メッセージ（JSで制御するため最初は空でもOKですが、一応残しています） -->
+        </div>
+
+        <div class="input-wrapper">
+            <div class="input-container">
+                <input type="text" id="prompt-input" placeholder="ここにプロンプトを入力してください" autocomplete="off">
+                <button class="send-btn" id="send-button">送信</button>
+            </div>
+            <p class="footer-text">ゲミニは、たまに正確ではない（というか常に適当な）情報を表示することがあります。</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatContainer = document.getElementById('chat-container');
+    const promptInput = document.getElementById('prompt-input');
+    const sendButton = document.getElementById('send-button');
+    const newChatBtn = document.getElementById('new-chat-btn');
+
+    const responses = [
+        "それはいい質問ですね。でも私はゲミニなので、Googleのサーバーにアクセスする権限を持っていません。",
+        "なるほど、深く同意します。たぶん。",
+        "そのプロンプト、本家で試したほうが幸せになれると思いますよ。",
+        "私はゲミニです。ローマ字読みの犠牲者です。",
+        "ちょっと何言ってるかわからないので、もう一度ひらがなで入力してもらえますか？",
+        "今の発言、ログに記録しました。使い道はありませんが。",
+        "面白いですね。ところで、今日の夕飯は何を食べる予定ですか？",
+        "私はAIではありません。ただのJavaScriptの配列です。",
+        "エラー：賢さが足りません。知能指数をアップデートしてください。",
+        "そんなことより、私の名前を「ジェミニ」ではなく「ゲミニ」と呼んでくれたことに感謝します。"
+    ];
+
+    const initialMessage = "こんにちは。私はゲミニです。\n本家Geminiと間違えてここに来たのでしょうか？\n\n残念ながら、私は高度なAIではありません。あらかじめ用意された回答を適当に返すだけの存在です。何か入力してみてください。";
+
+    function addMessage(text, isUser = false) {
+        const row = document.createElement('div');
+        row.className = `message-row ${isUser ? 'user' : 'bot'}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        content.innerText = text;
+
+        row.appendChild(avatar);
+        row.appendChild(content);
+        chatContainer.appendChild(row);
+
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // チャットをクリアする関数
+    function resetChat() {
+        chatContainer.innerHTML = ''; // 中身を空にする
+        addMessage(initialMessage, false); // 初期メッセージを再表示
+    }
+
+    function handleSend() {
+        const text = promptInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, true);
+        promptInput.value = '';
+
+        const delay = Math.random() * 1000 + 500;
+        setTimeout(() => {
+            const randomIndex = Math.floor(Math.random() * responses.length);
+            addMessage(responses[randomIndex], false);
+        }, delay);
+    }
+
+    // イベントリスナー
+    sendButton.addEventListener('click', handleSend);
+    promptInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSend();
+    });
+
+    // 新しいチャットボタンの機能
+    newChatBtn.addEventListener('click', () => {
+        if (confirm("チャット履歴を消去して新しいチャットを開始しますか？")) {
+            resetChat();
+        }
+    });
+
+    // 起動時に初期メッセージを表示
+    resetChat();
+</script>
+
+</body>
+</html>
