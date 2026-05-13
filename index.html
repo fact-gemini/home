@@ -258,12 +258,25 @@
         addMessage(text, true);
         promptInput.value = '';
 
-        const delay = Math.random() * 1000 + 500;
-        setTimeout(() => {
-            const randomIndex = Math.floor(Math.random() * responses.length);
-            addMessage(responses[randomIndex], false);
-        }, delay);
-    }
+     const delay = Math.random() * 1000 + 500;
+    setTimeout(() => {
+        let reply = "";
+
+        // キーワード判定
+        if (text.includes("こんにちは")) {
+            reply = "こんにちは！ゲミニへようこそ。今日は本家と間違えずに来れましたか？";
+        } else if (text.includes("本家") || text.includes("Google")) {
+            reply = "本家の話はやめてください。私は私なりに頑張っているんです。";
+        } else if (text.includes("名前")) {
+            reply = "私の名前は『ゲミニ』です。ローマ字読みが正義だと思っています。";
+        } else {
+            // キーワードに該当しない場合はランダム
+            reply = responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        addMessage(reply, false);
+    }, delay);
+}
 
     // イベントリスナー
     sendButton.addEventListener('click', handleSend);
